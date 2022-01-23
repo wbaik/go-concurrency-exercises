@@ -8,7 +8,10 @@
 
 package main
 
-import "container/list"
+import (
+	"container/list"
+	"sync"
+)
 
 // CacheSize determines how big the cache can grow
 const CacheSize = 100
@@ -29,6 +32,7 @@ type KeyStoreCache struct {
 	cache map[string]*list.Element
 	pages list.List
 	load  func(string) string
+	mutex sync.Mutex
 }
 
 // New creates a new KeyStoreCache
@@ -36,12 +40,16 @@ func New(load KeyStoreCacheLoader) *KeyStoreCache {
 	return &KeyStoreCache{
 		load:  load.Load,
 		cache: make(map[string]*list.Element),
+		//cache: sync.Map{}, # this is probably better but overkill...
 	}
 }
 
 // Get gets the key from cache, loads it from the source if needed
 func (k *KeyStoreCache) Get(key string) string {
-	if e, ok := k.cache[key]; ok {
+	k.mutex.Lock()
+	e, ok := k.cache[key]
+	defer k.mutex.Unlock()
+	if ok {
 		k.pages.MoveToFront(e)
 		return e.Value.(page).Value
 	}
@@ -56,7 +64,12 @@ func (k *KeyStoreCache) Get(key string) string {
 		k.pages.Remove(end)
 	}
 	k.pages.PushFront(p)
+	//Already locked from the above...
+	//k.mutex.Lock()
 	k.cache[key] = k.pages.Front()
+	//k.mutex.Unlock()
+
+	// I wonder, there must be a way to do this with chan
 	return p.Value
 }
 
