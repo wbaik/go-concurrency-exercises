@@ -39,10 +39,8 @@ func main() {
 				go proc.Stop()
 				select {
 					case <- time.After(time.Second):
-						signal.Stop(sigs)
 						return
 				}
-
 			}
 		}
 	}()
