@@ -69,7 +69,8 @@ func (k *KeyStoreCache) Get(key string) string {
 	k.cache[key] = k.pages.Front()
 	//k.mutex.Unlock()
 
-	// I wonder, there must be a way to do this with chan
+	// A better solution
+	// https://eli.thegreenplace.net/2019/on-concurrency-in-go-http-servers/
 	return p.Value
 }
 
